@@ -1,4 +1,4 @@
-ARG NGINX_VERSION=1.18.0
+ARG NGINX_VERSION=1.19.1
 ARG NGX_BROTLI_COMMIT=25f86f0bac1101b6512135eac5f93c49c63609e3
 ARG CONFIG="\
 		--prefix=/etc/nginx \
@@ -47,6 +47,7 @@ ARG CONFIG="\
 		--add-module=/usr/src/ngx_brotli \
 	"
 
+
 FROM alpine:3.12
 LABEL maintainer="NGINX Docker Maintainers <docker-maint@nginx.com>"
 
@@ -74,7 +75,8 @@ RUN \
 		automake \
 		git \
 		g++ \
-		cmake
+		cmake \
+		patch
 
 COPY nginx.pub /tmp/nginx.pub
 
@@ -95,6 +97,13 @@ RUN \
 	&& gpg --batch --verify nginx.tar.gz.asc nginx.tar.gz \
 	&& mkdir -p /usr/src \
 	&& tar -zxC /usr/src -f nginx.tar.gz
+
+RUN \
+    cd /usr/src \
+    && git clone https://github.com/chobits/ngx_http_proxy_connect_module \
+    && cd /usr/src/nginx-$NGINX_VERSION \
+    && patch -p1 < /usr/src/ngx_http_proxy_connect_module/patch/proxy_connect_rewrite_1018.patch \
+    && ./configure --add-module=/usr/src/ngx_http_proxy_connect_module
 
 RUN \
 	cd /usr/src/nginx-$NGINX_VERSION \
